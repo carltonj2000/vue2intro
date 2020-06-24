@@ -17,6 +17,10 @@ Vue.component("product", {
       type: Boolean,
       required: true,
     },
+    cart: {
+      type: Array,
+      required: true,
+    },
   },
   template: `
       <div class="product">
@@ -60,7 +64,6 @@ Vue.component("product", {
         >
           Remove from Cart
         </button>
-        <div class="cart"><p>Cart ({{cartCount}})</p></div>
       </div>
   `,
   data() {
@@ -86,30 +89,19 @@ Vue.component("product", {
       ],
       variantSelectedId: 2235,
       sizes: ["S", "M", "L", "XL", "XXL", "XXXL"],
-      cart: [],
     };
   },
   methods: {
     addToCart() {
-      const { variantSelected, variantSelectedId, variants, cart } = this;
+      const { variantSelected, variantSelectedId, variants } = this;
       if (variantSelected.quantity <= 0) return;
-      const inCart = cart.find((variant) => variant.id === variantSelectedId);
-      if (inCart) {
-        inCart.quantity++;
-      } else {
-        this.cart.push({ id: this.variantSelectedId, quantity: 1 });
-      }
-      const vrnt = variants.find((variant) => variant.id === variantSelectedId);
-      vrnt.quantity--;
+      this.$emit("add-to-cart", variantSelectedId);
+      variants.find((variant) => variant.id === variantSelectedId).quantity--;
     },
     removeFromCart() {
-      const { cart, variantSelectedId, variants } = this;
-      if (cart.length <= 0) return;
-      const inCart = cart.find((variant) => variant.id === variantSelectedId);
-      if (!inCart) return;
-      inCart.quantity--;
-      const vrnt = variants.find((variant) => variant.id === variantSelectedId);
-      vrnt.quantity++;
+      const { variantSelectedId, variants } = this;
+      this.$emit("remove-from-cart", variantSelectedId);
+      variants.find((variant) => variant.id === variantSelectedId).quantity++;
     },
     variantSelect(id) {
       this.variantSelectedId = id;
@@ -124,11 +116,6 @@ Vue.component("product", {
     },
     inStock() {
       return this.variantSelected.quantity > 0;
-    },
-    cartCount() {
-      const { cart } = this;
-      if (cart.length <= 0) return 0;
-      return cart.reduce((acc, items) => acc + items.quantity, 0);
     },
     canRemove() {
       const { cart, variantSelectedId } = this;
@@ -151,5 +138,30 @@ const app = new Vue({
   el: "#app",
   data: {
     premium: false,
+    cart: [],
+  },
+  methods: {
+    addToCart(id) {
+      const inCart = this.cart.find((item) => item.id === id);
+      if (inCart) {
+        inCart.quantity++;
+      } else {
+        this.cart.push({ id, quantity: 1 });
+      }
+    },
+    removeFromCart(id) {
+      const { cart } = this;
+      if (cart.length <= 0) return;
+      const inCart = cart.find((item) => item.id === id);
+      if (!inCart) return;
+      inCart.quantity--;
+    },
+  },
+  computed: {
+    cartCount() {
+      const { cart } = this;
+      if (cart.length <= 0) return 0;
+      return cart.reduce((acc, items) => acc + items.quantity, 0);
+    },
   },
 });
